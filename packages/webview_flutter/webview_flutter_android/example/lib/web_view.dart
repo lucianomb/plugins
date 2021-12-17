@@ -353,6 +353,21 @@ class _PlatformCallbacksHandler implements WebViewPlatformCallbacksHandler {
       _webView.onWebResourceError!(error);
     }
   }
+
+  @override
+  void onPageDidScroll(double offset) {
+    // TODO: implement onPageDidScroll
+  }
+
+  @override
+  void onPageTitleChange(String title) {
+    // TODO: implement onPageTitleChange
+  }
+
+  @override
+  void onPageURLChange(String url) {
+    // TODO: implement onPageURLChange
+  }
 }
 
 /// Controls a [WebView].

@@ -365,6 +365,9 @@ class WebView {
     return api.setBackgroundColorFromInstance(this, color.value);
   }
 
+  /// When a page was scroll in the current [WebView].
+  void onPageDidScroll(WebView webView, double offset) {}
+
   /// Releases all resources used by the [WebView].
   ///
   /// Any methods called after [release] will throw an exception.
@@ -545,6 +548,19 @@ class WebSettings {
   /// disable [setDisplayZoomControls].
   Future<void> setBuiltInZoomControls(bool enabled) {
     return api.setBuiltInZoomControlsFromInstance(this, enabled);
+  }
+
+  /// Configures the WebView's behavior when a secure origin attempts to load
+  /// a resource from an insecure origin. By default, apps that target
+  /// android.os.Build.VERSION_CODES.KITKAT or below default to
+  /// MIXED_CONTENT_ALWAYS_ALLOW. Apps targeting
+  /// android.os.Build.VERSION_CODES.LOLLIPOP default to MIXED_CONTENT_NEVER_ALLOW.
+  /// The preferred and most secure mode of operation for the WebView is
+  /// MIXED_CONTENT_NEVER_ALLOW and use of MIXED_CONTENT_ALWAYS_ALLOW is
+  /// strongly discouraged.
+  /// true: MIXED_CONTENT_ALWAYS_ALLOW  false: MIXED_CONTENT_NEVER_ALLOW
+  Future<void> setMixedContentModeEnable(bool enabled) {
+    return api.setMixedContentModeEnableFromInstance(this, enabled);
   }
 }
 
@@ -735,6 +751,9 @@ abstract class WebViewClient {
   /// causes the current [WebView] to abort loading the URL, while returning
   /// false causes the [WebView] to continue loading the URL as usual.
   void urlLoading(WebView webView, String url) {}
+
+  /// When a URL has been loaded in the current [WebView].
+  void onURLChange(WebView webView, String url) {}
 }
 
 /// The interface to be used when content can not be handled by the rendering engine for [WebView], and should be downloaded instead.
@@ -771,6 +790,9 @@ abstract class WebChromeClient {
 
   /// Notify the host application that a file should be downloaded.
   void onProgressChanged(WebView webView, int progress) {}
+
+  /// Notify the host application that title has been loaded
+  void onTitleChange(WebView webView, String title) {}
 }
 
 /// Encompasses parameters to the [WebViewClient.requestLoading] method.

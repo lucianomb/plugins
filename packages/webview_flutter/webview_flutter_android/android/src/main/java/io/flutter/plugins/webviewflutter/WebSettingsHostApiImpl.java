@@ -4,6 +4,7 @@
 
 package io.flutter.plugins.webviewflutter;
 
+import android.os.Build;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.WebSettingsHostApi;
@@ -117,5 +118,15 @@ public class WebSettingsHostApiImpl implements WebSettingsHostApi {
   public void setBuiltInZoomControls(Long instanceId, Boolean enabled) {
     final WebSettings webSettings = (WebSettings) instanceManager.getInstance(instanceId);
     webSettings.setBuiltInZoomControls(enabled);
+  }
+
+  @Override
+  public void setMixedContentModeEnable(Long instanceId, Boolean enabled) {
+    final WebSettings webSettings = (WebSettings) instanceManager.getInstance(instanceId);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      webSettings.setMixedContentMode(enabled ?
+              WebSettings.MIXED_CONTENT_ALWAYS_ALLOW :
+              WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+    }
   }
 }

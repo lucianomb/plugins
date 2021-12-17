@@ -66,6 +66,15 @@ typedef PageLoadingCallback = void Function(int progress);
 /// Signature for when a [WebView] has failed to load a resource.
 typedef WebResourceErrorCallback = void Function(WebResourceError error);
 
+/// Signature for when a [WebView] was scroll.
+typedef PageDidScrollCallback = void Function(double offset);
+
+/// Signature for when a [WebView] has changed it's title.
+typedef PageTitleChangeCallback = void Function(String title);
+
+/// Signature for when a [WebView] has changed it's url.
+typedef PageURLChangeCallback = void Function(String url);
+
 /// A web view widget for showing html content.
 ///
 /// There is a known issue that on iOS 13.4 and 13.5, other flutter widgets covering
@@ -91,6 +100,9 @@ class WebView extends StatefulWidget {
     this.onPageFinished,
     this.onProgress,
     this.onWebResourceError,
+    this.onDidScrollCallback,
+    this.onTitleChangeCallback,
+    this.onUrlChangeCallback,
     this.debuggingEnabled = false,
     this.gestureNavigationEnabled = false,
     this.userAgent,
@@ -242,6 +254,15 @@ class WebView extends StatefulWidget {
   ///
   /// This callback is only called for the main page.
   final WebResourceErrorCallback? onWebResourceError;
+
+  /// Invoked when a page is scrolling
+  final PageDidScrollCallback? onDidScrollCallback;
+
+  /// Invoked when web navigate to new page and title was change
+  final PageTitleChangeCallback? onTitleChangeCallback;
+
+  /// Invoked when web navigate to new page
+  final PageURLChangeCallback? onUrlChangeCallback;
 
   /// Controls whether WebView debugging is enabled.
   ///
@@ -490,6 +511,28 @@ class _PlatformCallbacksHandler implements WebViewPlatformCallbacksHandler {
       _widget.onWebResourceError!(error);
     }
   }
+
+  @override
+  void onPageDidScroll(double offset) {
+    if (_widget.onDidScrollCallback != null) {
+      _widget.onDidScrollCallback!(offset);
+    }
+  }
+
+  @override
+  void onPageTitleChange(String title) {
+    if (_widget.onTitleChangeCallback != null) {
+      _widget.onTitleChangeCallback!(title);
+    }
+  }
+
+  @override
+  void onPageURLChange(String url){
+    if (_widget.onUrlChangeCallback != null) {
+      _widget.onUrlChangeCallback!(url);
+    }
+  }
+
 }
 
 /// Controls a [WebView].

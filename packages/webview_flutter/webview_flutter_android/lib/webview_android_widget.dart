@@ -106,6 +106,7 @@ class WebViewAndroidPlatformController extends WebViewPlatformController {
         super(callbacksHandler) {
     webView = webViewProxy.createWebView(
       useHybridComposition: useHybridComposition,
+      onPageDidScrollCalback: callbacksHandler.onPageDidScroll,
     );
 
     webView.settings.setDomStorageEnabled(true);
@@ -115,6 +116,7 @@ class WebViewAndroidPlatformController extends WebViewPlatformController {
     webView.settings.setUseWideViewPort(true);
     webView.settings.setDisplayZoomControls(false);
     webView.settings.setBuiltInZoomControls(true);
+    webView.settings.setMixedContentModeEnable(true);
 
     _setCreationParams(creationParams);
     webView.setDownloadListener(downloadListener);
@@ -392,6 +394,7 @@ class WebViewAndroidPlatformController extends WebViewPlatformController {
         onWebResourceErrorCallback: callbacksHandler.onWebResourceError,
         loadUrl: loadUrl,
         onNavigationRequestCallback: callbacksHandler.onNavigationRequest,
+        onUrlChangeCallback: callbacksHandler.onPageURLChange,
       );
     } else {
       downloadListener._onNavigationRequest = null;
@@ -399,8 +402,10 @@ class WebViewAndroidPlatformController extends WebViewPlatformController {
         onPageStartedCallback: callbacksHandler.onPageStarted,
         onPageFinishedCallback: callbacksHandler.onPageFinished,
         onWebResourceErrorCallback: callbacksHandler.onWebResourceError,
+        onUrlChangeCallback: callbacksHandler.onPageURLChange,
       );
     }
+    webChromeClient.onTitleChangeCallback = callbacksHandler.onPageTitleChange;
     return webView.setWebViewClient(_webViewClient);
   }
 
@@ -505,6 +510,7 @@ class WebViewAndroidWebViewClient extends android_webview.WebViewClient {
     required this.onPageStartedCallback,
     required this.onPageFinishedCallback,
     required this.onWebResourceErrorCallback,
+    required this.onUrlChangeCallback,
   })  : loadUrl = null,
         onNavigationRequestCallback = null,
         super(shouldOverrideUrlLoading: false);
@@ -516,6 +522,7 @@ class WebViewAndroidWebViewClient extends android_webview.WebViewClient {
     required this.onWebResourceErrorCallback,
     required this.onNavigationRequestCallback,
     required this.loadUrl,
+    required this.onUrlChangeCallback,
   }) : super(shouldOverrideUrlLoading: true);
 
   /// Callback when [android_webview.WebViewClient] receives a callback from [android_webview.WebViewClient].onPageStarted.
@@ -536,6 +543,9 @@ class WebViewAndroidWebViewClient extends android_webview.WebViewClient {
   /// Callback when a navigation request is approved.
   final Future<void> Function(String url, Map<String, String>? headers)?
       loadUrl;
+
+  /// Callback when a navigation request has done.
+  final void Function(String url) onUrlChangeCallback;
 
   static WebResourceErrorType _errorCodeToErrorType(int errorCode) {
     switch (errorCode) {
@@ -669,6 +679,11 @@ class WebViewAndroidWebViewClient extends android_webview.WebViewClient {
       });
     }
   }
+
+  @override
+  void onURLChange(android_webview.WebView webView, String url) {
+    onUrlChangeCallback(url);
+  }
 }
 
 /// Handles JavaScript dialogs, favicons, titles, and the progress for [WebViewAndroidPlatformController].
@@ -676,10 +691,20 @@ class WebViewAndroidWebChromeClient extends android_webview.WebChromeClient {
   // Changed by WebViewAndroidPlatformController.
   void Function(int progress)? _onProgress;
 
+  /// Callback when a navigation request has done.
+  void Function(String title)? onTitleChangeCallback;
+
   @override
   void onProgressChanged(android_webview.WebView webView, int progress) {
     if (_onProgress != null) {
       _onProgress!(progress);
+    }
+  }
+
+  @override
+  void onTitleChange(android_webview.WebView webView, String title) {
+    if (onTitleChangeCallback != null) {
+      onTitleChangeCallback!(title);
     }
   }
 }
@@ -693,8 +718,13 @@ class WebViewProxy {
   const WebViewProxy();
 
   /// Constructs a [android_webview.WebView].
-  android_webview.WebView createWebView({required bool useHybridComposition}) {
-    return android_webview.WebView(useHybridComposition: useHybridComposition);
+  android_webview.WebView createWebView({
+    required bool useHybridComposition,
+    required Function(double offset) onPageDidScrollCalback,
+  }) {
+    return ScrollWebView(
+        useHybrid: useHybridComposition,
+        onPageDidScrollCalback: onPageDidScrollCalback);
   }
 
   /// Enables debugging of web contents (HTML / CSS / JavaScript) loaded into any WebViews of this application.
@@ -707,5 +737,34 @@ class WebViewProxy {
   /// See [android_webview.WebView].setWebContentsDebuggingEnabled.
   Future<void> setWebContentsDebuggingEnabled(bool enabled) {
     return android_webview.WebView.setWebContentsDebuggingEnabled(true);
+  }
+}
+
+/// Scroll View
+class ScrollWebView extends android_webview.WebView {
+
+  /// Constructs a [android_webview.WebView].
+  ScrollWebView({
+    this.useHybrid = false,
+    required this.onPageDidScrollCalback,
+  }): super(useHybridComposition: useHybrid);
+
+  /// Whether the [WebView] will be rendered with an [AndroidViewSurface].
+  ///
+  /// This implementation uses hybrid composition to render the WebView Widget.
+  /// This comes at the cost of some performance on Android versions below 10.
+  /// See
+  /// https://flutter.dev/docs/development/platform-integration/platform-views#performance
+  /// for more information.
+  ///
+  /// Defaults to false.
+  final bool useHybrid;
+
+  /// Callback when page was scroll
+  final void Function(double offset) onPageDidScrollCalback;
+
+  @override
+  void onPageDidScroll(android_webview.WebView webView, double offset) {
+    onPageDidScrollCalback(offset);
   }
 }

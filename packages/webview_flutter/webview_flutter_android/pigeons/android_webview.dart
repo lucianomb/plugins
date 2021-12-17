@@ -105,6 +105,13 @@ abstract class WebViewHostApi {
   void setBackgroundColor(int instanceId, int color);
 }
 
+@FlutterApi()
+abstract class WebViewFlutterApi {
+  void dispose(int instanceId);
+
+  void onPageDidScroll(int webViewInstanceId, double offset);
+}
+
 @HostApi(dartHostTestHandler: 'TestWebSettingsHostApi')
 abstract class WebSettingsHostApi {
   void create(int instanceId, int webViewInstanceId);
@@ -132,6 +139,8 @@ abstract class WebSettingsHostApi {
   void setDisplayZoomControls(int instanceId, bool enabled);
 
   void setBuiltInZoomControls(int instanceId, bool enabled);
+
+  void setMixedContentModeEnable(int instanceId, bool enabled);
 }
 
 @HostApi(dartHostTestHandler: 'TestJavaScriptChannelHostApi')
@@ -181,6 +190,8 @@ abstract class WebViewClientFlutterApi {
   );
 
   void urlLoading(int instanceId, int webViewInstanceId, String url);
+
+  void onURLChange(int instanceId, int webViewInstanceId, String url);
 }
 
 @HostApi(dartHostTestHandler: 'TestDownloadListenerHostApi')
@@ -219,4 +230,6 @@ abstract class WebChromeClientFlutterApi {
   void dispose(int instanceId);
 
   void onProgressChanged(int instanceId, int webViewInstanceId, int progress);
+
+  void onTitleChange(int instanceId, int webViewInstanceId, String title);
 }

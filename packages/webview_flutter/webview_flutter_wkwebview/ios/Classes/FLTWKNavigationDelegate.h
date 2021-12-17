@@ -7,7 +7,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface FLTWKNavigationDelegate : NSObject <WKNavigationDelegate>
+@interface FLTWKNavigationDelegate : NSObject <WKNavigationDelegate, UIScrollViewDelegate>
 
 - (instancetype)initWithChannel:(FlutterMethodChannel *)channel;
 

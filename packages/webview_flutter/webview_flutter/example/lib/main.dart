@@ -103,7 +103,7 @@ class _WebViewExampleState extends State<WebViewExample> {
       // to allow calling Scaffold.of(context) so we can show a snackbar.
       body: Builder(builder: (BuildContext context) {
         return WebView(
-          initialUrl: 'https://flutter.dev',
+          initialUrl: 'https://www.debug.100.com.tw/activity/subject/',
           javascriptMode: JavascriptMode.unrestricted,
           onWebViewCreated: (WebViewController webViewController) {
             _controller.complete(webViewController);
@@ -127,6 +127,15 @@ class _WebViewExampleState extends State<WebViewExample> {
           },
           onPageFinished: (String url) {
             print('Page finished loading: $url');
+          },
+          onDidScrollCallback: (double offset) {
+            print('onDidScrollCallback: $offset');
+          },
+          onTitleChangeCallback: (String title) {
+            print('onTitleChangeCallback: $title');
+          },
+          onUrlChangeCallback: (String url) {
+            print('onUrlChangeCallback: $url');
           },
           gestureNavigationEnabled: true,
           backgroundColor: const Color(0x00000000),

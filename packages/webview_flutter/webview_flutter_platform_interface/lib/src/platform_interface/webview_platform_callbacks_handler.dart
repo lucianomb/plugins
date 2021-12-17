@@ -29,4 +29,13 @@ abstract class WebViewPlatformCallbacksHandler {
 
   /// Report web resource loading error to the host application.
   void onWebResourceError(WebResourceError error);
+
+  /// Invoked by [WebViewPlatformController] when a page is scrolling.
+  void onPageDidScroll(double offset);
+
+  /// Invoked by [WebViewPlatformController] when navigate to new page.
+  void onPageTitleChange(String title);
+
+  /// Invoked by [WebViewPlatformController] when navigate to new page.
+  void onPageURLChange(String url);
 }

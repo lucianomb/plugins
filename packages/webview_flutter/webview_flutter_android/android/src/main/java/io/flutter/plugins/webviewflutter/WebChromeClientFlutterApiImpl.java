@@ -39,6 +39,16 @@ public class WebChromeClientFlutterApiImpl extends WebChromeClientFlutterApi {
         callback);
   }
 
+  /** Passes arguments from {@link WebChromeClient#onReceivedTitle(WebView, String)} to Dart. */
+  public void onReceivedTitle(
+          WebChromeClient webChromeClient, WebView webView, String title, Reply<Void> callback) {
+    super.onTitleChange(
+            instanceManager.getInstanceId(webChromeClient),
+            instanceManager.getInstanceId(webView),
+            title,
+            callback);
+  }
+
   /**
    * Communicates to Dart that the reference to a {@link WebChromeClient}} was removed.
    *

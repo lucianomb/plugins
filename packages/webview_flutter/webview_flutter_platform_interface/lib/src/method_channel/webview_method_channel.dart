@@ -74,6 +74,18 @@ class MethodChannelWebViewPlatform implements WebViewPlatformController {
           ),
         );
         return null;
+      case 'onPageDidScroll':
+        _platformCallbacksHandler
+            .onPageDidScroll(call.arguments['offset']! as double);
+        return null;
+      case 'onTitleChange':
+        _platformCallbacksHandler
+            .onPageTitleChange(call.arguments['title']! as String);
+        return null;
+      case 'onURLChange':
+        _platformCallbacksHandler
+            .onPageURLChange(call.arguments['url']! as String);
+        return null;
     }
 
     throw MissingPluginException(

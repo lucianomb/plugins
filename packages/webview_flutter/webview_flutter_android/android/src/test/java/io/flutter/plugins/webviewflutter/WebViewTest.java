@@ -32,6 +32,8 @@ import org.mockito.junit.MockitoRule;
 public class WebViewTest {
   @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
 
+  @Mock public WebViewFlutterApiImpl mockFlutterApi;
+
   @Mock public WebViewPlatformView mockWebView;
 
   @Mock WebViewHostApiImpl.WebViewProxy mockWebViewProxy;
@@ -45,8 +47,8 @@ public class WebViewTest {
   public void setUp() {
     testInstanceManager = new InstanceManager();
     when(mockWebViewProxy.createWebView(mockContext)).thenReturn(mockWebView);
-    testHostApiImpl =
-        new WebViewHostApiImpl(testInstanceManager, mockWebViewProxy, mockContext, null);
+    testHostApiImpl = new WebViewHostApiImpl(testInstanceManager, mockWebViewProxy,
+            mockContext, null, mockFlutterApi);
     testHostApiImpl.create(0L, true);
   }
 

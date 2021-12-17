@@ -120,6 +120,10 @@
     _navigationDelegate = [[FLTWKNavigationDelegate alloc] initWithChannel:_channel];
     _webView.UIDelegate = self;
     _webView.navigationDelegate = _navigationDelegate;
+    _webView.scrollView.delegate = _navigationDelegate;
+    [_webView addObserver:self forKeyPath:@"title" options:NSKeyValueObservingOptionNew context:nil];
+    [_webView addObserver:self forKeyPath:@"URL" options:NSKeyValueObservingOptionNew context:nil];
+
     __weak __typeof__(self) weakSelf = self;
     [_channel setMethodCallHandler:^(FlutterMethodCall* call, FlutterResult result) {
       [weakSelf onMethodCall:call result:result];
@@ -152,6 +156,8 @@
   if (_progressionDelegate != nil) {
     [_progressionDelegate stopObservingProgress:_webView];
   }
+  [_webView removeObserver:self forKeyPath:@"title" context:nil];
+  [_webView removeObserver:self forKeyPath:@"URL" context:nil];
 }
 
 - (UIView*)view {
@@ -694,6 +700,22 @@
   }
 
   return YES;
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context{
+    if([@"title" isEqualToString:keyPath]){
+        NSString * title = _webView.title;
+        if(title == nil){
+            title = @"";
+        }
+        [_channel invokeMethod:@"onTitleChange" arguments: @{@"title": title}];
+    } else if([@"URL" isEqualToString:keyPath]){
+        NSString * url = _webView.URL.absoluteString;
+        if(url == nil){
+            url = @"";
+        }
+        [_channel invokeMethod:@"onURLChange" arguments: @{@"url": url}];
+    }
 }
 
 #pragma mark WKUIDelegate

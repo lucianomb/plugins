@@ -107,6 +107,13 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
       }
     }
 
+    @Override
+    public void onReceivedTitle(WebView view, String title) {
+      if (flutterApi != null) {
+        flutterApi.onReceivedTitle(this, view, title, reply -> {});
+      }
+    }
+
     /**
      * Set the {@link WebViewClient} that calls to {@link WebChromeClient#onCreateWindow} are passed
      * to.

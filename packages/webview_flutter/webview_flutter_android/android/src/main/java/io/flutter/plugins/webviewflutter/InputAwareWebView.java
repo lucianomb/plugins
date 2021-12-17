@@ -12,7 +12,6 @@ import android.os.Build;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
-import android.webkit.WebView;
 import android.widget.ListPopupWindow;
 
 /**
@@ -25,7 +24,7 @@ import android.widget.ListPopupWindow;
  *
  * <p>See also {@link ThreadedInputConnectionProxyAdapterView}.
  */
-class InputAwareWebView extends WebView {
+class InputAwareWebView extends ScrollListenerWebView {
   private static final String TAG = "InputAwareWebView";
   private View threadedInputConnectionProxyView;
   private ThreadedInputConnectionProxyAdapterView proxyAdapterView;

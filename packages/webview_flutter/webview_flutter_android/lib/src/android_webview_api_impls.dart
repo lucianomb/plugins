@@ -39,6 +39,7 @@ class AndroidWebViewFlutterApis {
     WebViewClientFlutterApiImpl? webViewClientFlutterApi,
     WebChromeClientFlutterApiImpl? webChromeClientFlutterApi,
     JavaScriptChannelFlutterApiImpl? javaScriptChannelFlutterApi,
+    WebViewFlutterApiImpl? webViewFlutterApi,
   }) {
     this.downloadListenerFlutterApi =
         downloadListenerFlutterApi ?? DownloadListenerFlutterApiImpl();
@@ -48,6 +49,8 @@ class AndroidWebViewFlutterApis {
         webChromeClientFlutterApi ?? WebChromeClientFlutterApiImpl();
     this.javaScriptChannelFlutterApi =
         javaScriptChannelFlutterApi ?? JavaScriptChannelFlutterApiImpl();
+    this.webViewFlutterApi =
+        webViewFlutterApi ?? WebViewFlutterApiImpl();
   }
 
   static bool _haveBeenSetUp = false;
@@ -69,6 +72,9 @@ class AndroidWebViewFlutterApis {
   /// Flutter Api for [JavaScriptChannel].
   late final JavaScriptChannelFlutterApiImpl javaScriptChannelFlutterApi;
 
+  /// Flutter Api for [WebView].
+  late final WebViewFlutterApiImpl webViewFlutterApi;
+
   /// Ensures all the Flutter APIs have been setup to receive calls from native code.
   void ensureSetUp() {
     if (!_haveBeenSetUp) {
@@ -76,6 +82,7 @@ class AndroidWebViewFlutterApis {
       WebViewClientFlutterApi.setup(webViewClientFlutterApi);
       WebChromeClientFlutterApi.setup(webChromeClientFlutterApi);
       JavaScriptChannelFlutterApi.setup(javaScriptChannelFlutterApi);
+      WebViewFlutterApi.setup(webViewFlutterApi);
       _haveBeenSetUp = true;
     }
   }
@@ -296,6 +303,33 @@ class WebViewHostApiImpl extends WebViewHostApi {
   }
 }
 
+/// Flutter api implementation for [WebViewClient].
+class WebViewFlutterApiImpl extends WebViewFlutterApi {
+  /// Constructs a [WebViewFlutterApiImpl].
+  WebViewFlutterApiImpl({InstanceManager? instanceManager}) {
+    this.instanceManager = instanceManager ?? InstanceManager.instance;
+  }
+
+  /// Maintains instances stored to communicate with java objects.
+  late final InstanceManager instanceManager;
+
+  @override
+  void dispose(int instanceId) {
+    instanceManager.removeInstance(instanceId);
+  }
+
+  @override
+  void onPageDidScroll(int webViewInstanceId, double offset) {
+    final WebView? webViewInstance =
+      instanceManager.getInstance(webViewInstanceId) as WebView?;
+    assert(
+      webViewInstance != null,
+      'InstanceManager does not contain an WebView with instanceId: $webViewInstanceId',
+    );
+    webViewInstance!.onPageDidScroll(webViewInstance, offset);
+  }
+}
+
 /// Host api implementation for [WebSettings].
 class WebSettingsHostApiImpl extends WebSettingsHostApi {
   /// Constructs a [WebSettingsHostApiImpl].
@@ -433,6 +467,17 @@ class WebSettingsHostApiImpl extends WebSettingsHostApi {
     bool enabled,
   ) {
     return setBuiltInZoomControls(
+      instanceManager.getInstanceId(instance)!,
+      enabled,
+    );
+  }
+
+  /// Helper method to convert instances ids to objects.
+  Future<void> setMixedContentModeEnableFromInstance(
+      WebSettings instance,
+      bool enabled,
+      ) {
+    return setMixedContentModeEnable(
       instanceManager.getInstanceId(instance)!,
       enabled,
     );
@@ -655,6 +700,23 @@ class WebViewClientFlutterApiImpl extends WebViewClientFlutterApi {
     );
     instance!.urlLoading(webViewInstance!, url);
   }
+
+  @override
+  void onURLChange(int instanceId, int webViewInstanceId, String url) {
+    final WebViewClient? instance =
+        instanceManager.getInstance(instanceId) as WebViewClient?;
+    final WebView? webViewInstance =
+        instanceManager.getInstance(webViewInstanceId) as WebView?;
+    assert(
+      instance != null,
+      'InstanceManager does not contain an WebViewClient with instanceId: $instanceId',
+    );
+    assert(
+      webViewInstance != null,
+      'InstanceManager does not contain an WebView with instanceId: $webViewInstanceId',
+    );
+    instance!.onURLChange(webViewInstance!, url);
+  }
 }
 
 /// Host api implementation for [DownloadListener].
@@ -774,5 +836,22 @@ class WebChromeClientFlutterApiImpl extends WebChromeClientFlutterApi {
       'InstanceManager does not contain an WebView with instanceId: $webViewInstanceId',
     );
     instance!.onProgressChanged(webViewInstance!, progress);
+  }
+
+  @override
+  void onTitleChange(int instanceId, int webViewInstanceId, String title) {
+    final WebChromeClient? instance =
+        instanceManager.getInstance(instanceId) as WebChromeClient?;
+    final WebView? webViewInstance =
+        instanceManager.getInstance(webViewInstanceId) as WebView?;
+    assert(
+      instance != null,
+      'InstanceManager does not contain an WebChromeClient with instanceId: $instanceId',
+    );
+    assert(
+      webViewInstance != null,
+      'InstanceManager does not contain an WebView with instanceId: $webViewInstanceId',
+    );
+    instance!.onTitleChange(webViewInstance!, title);
   }
 }

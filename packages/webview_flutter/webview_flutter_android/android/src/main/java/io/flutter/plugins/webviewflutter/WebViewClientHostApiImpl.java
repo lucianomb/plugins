@@ -8,6 +8,7 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.os.Build;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -99,6 +100,13 @@ public class WebViewClientHostApiImpl implements GeneratedAndroidWebView.WebView
     }
 
     @Override
+    public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
+      if (flutterApi != null) {
+        flutterApi.onURLChange(this, view, url, reply -> {});
+      }
+    }
+
+    @Override
     public void onUnhandledKeyEvent(WebView view, KeyEvent event) {
       // Deliberately empty. Occasionally the webview will mark events as having failed to be
       // handled even though they were handled. We don't want to propagate those as they're not
@@ -181,6 +189,13 @@ public class WebViewClientHostApiImpl implements GeneratedAndroidWebView.WebView
         flutterApi.urlLoading(this, view, url, reply -> {});
       }
       return shouldOverrideUrlLoading;
+    }
+
+    @Override
+    public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
+      if (flutterApi != null) {
+        flutterApi.onURLChange(this, view, url, reply -> {});
+      }
     }
 
     @Override

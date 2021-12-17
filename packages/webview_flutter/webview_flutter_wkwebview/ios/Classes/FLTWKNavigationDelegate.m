@@ -77,6 +77,11 @@
   [_methodChannel invokeMethod:@"onPageFinished" arguments:@{@"url" : webView.URL.absoluteString}];
 }
 
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+  float offset = (float)scrollView.contentOffset.y;
+  [_methodChannel invokeMethod:@"onPageDidScroll" arguments:@{@"offset" : [NSNumber numberWithFloat:offset]}];
+}
+
 + (id)errorCodeToString:(NSUInteger)code {
   switch (code) {
     case WKErrorUnknown:

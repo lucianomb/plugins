@@ -37,6 +37,7 @@ public class WebViewHostApiImpl implements WebViewHostApi {
   private final WebViewProxy webViewProxy;
   // Only used with WebView using virtual displays.
   @Nullable private final View containerView;
+  private final WebViewFlutterApiImpl flutterApi;
 
   private Context context;
 
@@ -102,7 +103,7 @@ public class WebViewHostApiImpl implements WebViewHostApi {
   }
 
   /** Implementation of {@link WebView} that can be used as a Flutter {@link PlatformView}s. */
-  public static class WebViewPlatformView extends WebView implements PlatformView, Releasable {
+  public static class WebViewPlatformView extends ScrollListenerWebView implements PlatformView, Releasable {
     private final ReleasableValue<WebViewClientHostApiImpl.ReleasableWebViewClient>
         currentWebViewClient = new ReleasableValue<>();
     private final ReleasableValue<DownloadListenerImpl> currentDownloadListener =
@@ -299,6 +300,26 @@ public class WebViewHostApiImpl implements WebViewHostApi {
     }
   }
 
+  public static class ScrollListenerProxy {
+
+    private final WebViewFlutterApiImpl flutterApi;
+
+    public ScrollListenerProxy(WebViewFlutterApiImpl flutterApi) {
+      this.flutterApi = flutterApi;
+    }
+
+    public void setupListener(ScrollListenerWebView view) {
+      view.setOnScrollChangeListener(new ScrollListenerWebView.OnScrollChangeListener() {
+        @Override
+        public void onDidScrollCallback(int offset) {
+          if (flutterApi != null) {
+            flutterApi.onPageDidScroll(view, (long) offset, reply -> {});
+          }
+        }
+      });
+    }
+  }
+
   /**
    * Creates a host API that handles creating {@link WebView}s and invoking its methods.
    *
@@ -311,11 +332,13 @@ public class WebViewHostApiImpl implements WebViewHostApi {
       InstanceManager instanceManager,
       WebViewProxy webViewProxy,
       Context context,
-      @Nullable View containerView) {
+      @Nullable View containerView,
+      WebViewFlutterApiImpl flutterApi) {
     this.instanceManager = instanceManager;
     this.webViewProxy = webViewProxy;
     this.context = context;
     this.containerView = containerView;
+    this.flutterApi = flutterApi;
   }
 
   /**
@@ -338,6 +361,9 @@ public class WebViewHostApiImpl implements WebViewHostApi {
         useHybridComposition
             ? webViewProxy.createWebView(context)
             : webViewProxy.createInputAwareWebView(context, containerView);
+
+    ScrollListenerProxy scrollListenerProxy = new ScrollListenerProxy(flutterApi);
+    scrollListenerProxy.setupListener((ScrollListenerWebView) webView);
 
     displayListenerProxy.onPostWebViewInitialization(displayManager);
     instanceManager.addInstance(webView, instanceId);

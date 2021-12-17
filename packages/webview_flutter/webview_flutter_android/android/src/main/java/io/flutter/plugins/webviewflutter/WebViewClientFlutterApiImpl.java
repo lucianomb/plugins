@@ -182,6 +182,18 @@ public class WebViewClientFlutterApiImpl extends WebViewClientFlutterApi {
   }
 
   /**
+   * Passes arguments from {@link WebViewClient#doUpdateVisitedHistory(WebView, String, boolean)} to Dart.
+   */
+  public void onURLChange(
+          WebViewClient webViewClient, WebView webView, String urlArg, Reply<Void> callback) {
+    onURLChange(
+            instanceManager.getInstanceId(webViewClient),
+            instanceManager.getInstanceId(webView),
+            urlArg,
+            callback);
+  }
+
+  /**
    * Communicates to Dart that the reference to a {@link WebViewClient} was removed.
    *
    * @param webViewClient the instance whose reference will be removed
