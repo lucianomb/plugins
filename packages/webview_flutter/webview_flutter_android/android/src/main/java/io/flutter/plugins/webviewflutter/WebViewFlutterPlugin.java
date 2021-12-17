@@ -4,14 +4,18 @@
 
 package io.flutter.plugins.webviewflutter;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Handler;
+import android.util.Log;
 import android.view.View;
 import androidx.annotation.NonNull;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.BinaryMessenger;
+import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.platform.PlatformViewRegistry;
 import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.CookieManagerHostApi;
 import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.DownloadListenerHostApi;
@@ -29,10 +33,12 @@ import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.WebViewHostApi;
  *
  * <p>Call {@link #registerWith} to use the stable {@code io.flutter.plugin.common} package instead.
  */
-public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
+public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware,
+        PluginRegistry.ActivityResultListener {
   private FlutterPluginBinding pluginBinding;
   private WebViewHostApiImpl webViewHostApi;
   private JavaScriptChannelHostApiImpl javaScriptChannelHostApi;
+  private WebChromeClientHostApiImpl webChromeClientHostApi;
 
   /**
    * Add an instance of this to {@link io.flutter.embedding.engine.plugins.PluginRegistry} to
@@ -92,6 +98,11 @@ public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
             new JavaScriptChannelHostApiImpl.JavaScriptChannelCreator(),
             new JavaScriptChannelFlutterApiImpl(binaryMessenger, instanceManager),
             new Handler(context.getMainLooper()));
+    webChromeClientHostApi =
+        new WebChromeClientHostApiImpl(
+            instanceManager,
+            new WebChromeClientHostApiImpl.WebChromeClientCreator(),
+            new WebChromeClientFlutterApiImpl(binaryMessenger, instanceManager));
 
     WebViewHostApi.setup(binaryMessenger, webViewHostApi);
     JavaScriptChannelHostApi.setup(binaryMessenger, javaScriptChannelHostApi);
@@ -101,12 +112,7 @@ public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
             instanceManager,
             new WebViewClientHostApiImpl.WebViewClientCreator(),
             new WebViewClientFlutterApiImpl(binaryMessenger, instanceManager)));
-    WebChromeClientHostApi.setup(
-        binaryMessenger,
-        new WebChromeClientHostApiImpl(
-            instanceManager,
-            new WebChromeClientHostApiImpl.WebChromeClientCreator(),
-            new WebChromeClientFlutterApiImpl(binaryMessenger, instanceManager)));
+    WebChromeClientHostApi.setup(binaryMessenger, webChromeClientHostApi);
     DownloadListenerHostApi.setup(
         binaryMessenger,
         new DownloadListenerHostApiImpl(
@@ -139,27 +145,42 @@ public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
 
   @Override
   public void onAttachedToActivity(@NonNull ActivityPluginBinding activityPluginBinding) {
-    updateContext(activityPluginBinding.getActivity());
+    activityPluginBinding.addActivityResultListener(this);
+    updateContext(activityPluginBinding.getActivity(),
+            activityPluginBinding.getActivity());
   }
 
   @Override
   public void onDetachedFromActivityForConfigChanges() {
-    updateContext(pluginBinding.getApplicationContext());
+    updateContext(pluginBinding.getApplicationContext(),
+            null);
   }
 
   @Override
   public void onReattachedToActivityForConfigChanges(
       @NonNull ActivityPluginBinding activityPluginBinding) {
-    updateContext(activityPluginBinding.getActivity());
+    activityPluginBinding.addActivityResultListener(this);
+    updateContext(activityPluginBinding.getActivity(),
+            activityPluginBinding.getActivity());
   }
 
   @Override
   public void onDetachedFromActivity() {
-    updateContext(pluginBinding.getApplicationContext());
+    updateContext(pluginBinding.getApplicationContext(), null);
   }
 
-  private void updateContext(Context context) {
+  private void updateContext(Context context, Activity activity) {
     webViewHostApi.setContext(context);
+    webChromeClientHostApi.setActivity(activity);
     javaScriptChannelHostApi.setPlatformThreadHandler(new Handler(context.getMainLooper()));
+  }
+
+  @Override
+  public boolean onActivityResult(int requestCode, int resultCode, Intent data) {
+    Log.e("ss", "onActivityResult 111" + webChromeClientHostApi);
+    if (webChromeClientHostApi != null) {
+      return webChromeClientHostApi.onActivityResult(requestCode, resultCode, data);
+    }
+    return false;
   }
 }

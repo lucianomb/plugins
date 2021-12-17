@@ -4,8 +4,17 @@
 
 package io.flutter.plugins.webviewflutter;
 
+import android.annotation.TargetApi;
+import android.app.Activity;
+import android.content.ClipData;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Message;
+import android.provider.MediaStore;
+import android.util.Log;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
@@ -25,6 +34,8 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
   private final InstanceManager instanceManager;
   private final WebChromeClientCreator webChromeClientCreator;
   private final WebChromeClientFlutterApiImpl flutterApi;
+  private WebChromeClientImpl webChromeClient;
+  private Activity activity;
 
   /**
    * Implementation of {@link WebChromeClient} that passes arguments of callback methods to Dart.
@@ -32,6 +43,12 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
   public static class WebChromeClientImpl extends WebChromeClient implements Releasable {
     @Nullable private WebChromeClientFlutterApiImpl flutterApi;
     private WebViewClient webViewClient;
+    private Activity activity;
+
+    private ValueCallback<Uri> uploadMessage;
+    private ValueCallback<Uri[]> uploadMessageAboveL;
+    private final static int FILE_CHOOSER_RESULT_CODE = 10000;
+    public static final int RESULT_OK = -1;
 
     /**
      * Creates a {@link WebChromeClient} that passes arguments of callbacks methods to Dart.
@@ -39,8 +56,8 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
      * @param flutterApi handles sending messages to Dart
      * @param webViewClient receives forwarded calls from {@link WebChromeClient#onCreateWindow}
      */
-    public WebChromeClientImpl(
-        @NonNull WebChromeClientFlutterApiImpl flutterApi, WebViewClient webViewClient) {
+    public WebChromeClientImpl(@NonNull WebChromeClientFlutterApiImpl flutterApi,
+                               WebViewClient webViewClient) {
       this.flutterApi = flutterApi;
       this.webViewClient = webViewClient;
     }
@@ -114,6 +131,92 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
       }
     }
 
+    // For Android  >= 4.1
+    public void openFileChooser(ValueCallback<Uri> valueCallback, String acceptType, String capture) {
+      Log.d("Image Chooser", "openFileChooser Android  >= 4.1");
+      uploadMessage = valueCallback;
+      openImageChooserActivity(true);
+    }
+
+    // For Android >= 5.0
+    @Override
+    public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+      boolean allowMultiple = true;
+      if (Build.VERSION.SDK_INT >= 21) {
+        if (fileChooserParams.getMode() == FileChooserParams.MODE_OPEN) {
+          allowMultiple = false;
+        }
+      }
+      Log.d("Image Chooser", "openFileChooser Android >= 5.0");
+      uploadMessageAboveL = filePathCallback;
+      openImageChooserActivity(allowMultiple);
+      return true;
+    }
+
+    private void openImageChooserActivity(boolean allowMultiple) {
+      Log.d("Image Chooser", "openImageChooserActivity");
+      Intent intent = new Intent(Intent.ACTION_PICK, null);
+      intent.setDataAndType(
+              MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*");
+      if (allowMultiple && Build.VERSION.SDK_INT >= 21) {
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+      }
+      Intent chooser = new Intent(Intent.ACTION_CHOOSER);
+      chooser.putExtra(Intent.EXTRA_TITLE, "选择图片");
+      chooser.putExtra(Intent.EXTRA_INTENT, intent);
+
+      if (activity != null) {
+        activity.startActivityForResult(chooser, FILE_CHOOSER_RESULT_CODE);
+      } else {
+        Log.d("Image Chooser", "activity is null");
+      }
+    }
+
+    public boolean onActivityResult(int requestCode, int resultCode, Intent data) {
+      Log.d("Image Chooser", "onActivityResult requestCode " + requestCode + "resultCode " + resultCode);
+      if (requestCode == FILE_CHOOSER_RESULT_CODE) {
+        if (null == uploadMessage && null == uploadMessageAboveL) {
+          return false;
+        }
+        Uri result = data == null || resultCode != RESULT_OK ? null : data.getData();
+        if (uploadMessageAboveL != null) {
+          onActivityResultAboveL(requestCode, resultCode, data);
+        } else if (uploadMessage != null && result != null) {
+          uploadMessage.onReceiveValue(result);
+          uploadMessage = null;
+        }
+      }
+      return false;
+    }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    private void onActivityResultAboveL(int requestCode, int resultCode, Intent intent) {
+      if (requestCode != FILE_CHOOSER_RESULT_CODE || uploadMessageAboveL == null) {
+        return;
+      }
+      Uri[] results = null;
+      if (resultCode == Activity.RESULT_OK) {
+        if (intent != null) {
+          String dataString = intent.getDataString();
+          ClipData clipData = intent.getClipData();
+          if (clipData != null) {
+            results = new Uri[clipData.getItemCount()];
+            for (int i = 0; i < clipData.getItemCount(); i++) {
+              ClipData.Item item = clipData.getItemAt(i);
+              results[i] = item.getUri();
+            }
+          }
+          if (dataString != null)
+          {
+            results = new Uri[]{Uri.parse(dataString)};
+          }
+        }
+      }
+      Log.d("Image Chooser", "onActivityResultAboveL: " + results.length);
+      uploadMessageAboveL.onReceiveValue(results);
+      uploadMessageAboveL = null;
+    }
+
     /**
      * Set the {@link WebViewClient} that calls to {@link WebChromeClient#onCreateWindow} are passed
      * to.
@@ -168,8 +271,23 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
   public void create(Long instanceId, Long webViewClientInstanceId) {
     final WebViewClient webViewClient =
         (WebViewClient) instanceManager.getInstance(webViewClientInstanceId);
-    final WebChromeClient webChromeClient =
+    webChromeClient =
         webChromeClientCreator.createWebChromeClient(flutterApi, webViewClient);
+    webChromeClient.activity = activity;
     instanceManager.addInstance(webChromeClient, instanceId);
+  }
+
+  /**
+   * Sets the activity to construct
+   *
+   * @param activity the new activity.
+   */
+  public void setActivity(Activity activity) {
+    this.activity = activity;
+  }
+
+  public boolean onActivityResult(int requestCode, int resultCode, Intent data) {
+    Log.e("ss", "onActivityResult 222");
+    return webChromeClient.onActivityResult(requestCode, resultCode, data);
   }
 }
