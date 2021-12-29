@@ -212,7 +212,7 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
           }
         }
       }
-      Log.d("Image Chooser", "onActivityResultAboveL: " + results.length);
+//      Log.d("Image Chooser", "onActivityResultAboveL: " + results.length);
       uploadMessageAboveL.onReceiveValue(results);
       uploadMessageAboveL = null;
     }
