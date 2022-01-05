@@ -177,10 +177,10 @@ public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware,
 
   @Override
   public boolean onActivityResult(int requestCode, int resultCode, Intent data) {
-    Log.e("ss", "onActivityResult 111" + webChromeClientHostApi);
+    Log.e("webview_flutter", "onActivityResult webChromeClientHostApi ");
     if (webChromeClientHostApi != null) {
       return webChromeClientHostApi.onActivityResult(requestCode, resultCode, data);
     }
-    return false;
+    return true;
   }
 }

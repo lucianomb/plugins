@@ -287,7 +287,10 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
   }
 
   public boolean onActivityResult(int requestCode, int resultCode, Intent data) {
-    Log.e("ss", "onActivityResult 222");
-    return webChromeClient.onActivityResult(requestCode, resultCode, data);
+    Log.e("webview_flutter", "onActivityResult webChromeClient ");
+    if (webChromeClient != null) {
+      return webChromeClient.onActivityResult(requestCode, resultCode, data);
+    }
+    return true;
   }
 }
