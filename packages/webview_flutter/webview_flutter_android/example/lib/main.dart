@@ -114,7 +114,8 @@ class _WebViewExampleState extends State<_WebViewExample> {
       // to allow calling Scaffold.of(context) so we can show a snackbar.
       body: Builder(builder: (BuildContext context) {
         return WebView(
-          initialUrl: 'https://flutter.dev',
+          // initialUrl: 'https://flutter.dev',
+          initialUrl: 'https://m.debug.8591.com.hk/customIM',
           onWebViewCreated: (WebViewController controller) {
             _controller.complete(controller);
           },
@@ -137,11 +138,11 @@ class _WebViewExampleState extends State<_WebViewExample> {
           },
           javascriptChannels: _createJavascriptChannels(context),
           javascriptMode: JavascriptMode.unrestricted,
-          userAgent: 'Custom_User_Agent',
+          // userAgent: 'Custom_User_Agent',
           backgroundColor: const Color(0x80000000),
         );
       }),
-      floatingActionButton: favoriteButton(),
+      // floatingActionButton: favoriteButton(),
     );
   }
 
