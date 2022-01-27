@@ -56,7 +56,8 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
 
     private ValueCallback<Uri> uploadMessage;
     private ValueCallback<Uri[]> uploadMessageAboveL;
-    private String mCameraFilePath;
+    private String captureFilePath;
+    private final static String FILE_PROVIDER = "com.addcn.fileprovider";
     private final static int FILE_CHOOSER_RESULT_CODE = 10000;
     private final static int CAPTURE_RESULT_CODE = 10001;
     public static final int RESULT_OK = -1;
@@ -147,7 +148,7 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
     public void openFileChooser(ValueCallback<Uri> valueCallback, String acceptType, String capture) {
       Log.d("Image Chooser", "openFileChooser Android  >= 4.1");
       uploadMessage = valueCallback;
-      openImageChooserActivity(true);
+      showImageChooser(true);
     }
 
     // For Android >= 5.0
@@ -155,113 +156,26 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
     @Override
     public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
       Log.d("Image Chooser", "onShowFileChooser Android >= 5.0");
-      Log.d("Image Chooser", "❤️❤️❤️=== isCaptureEnabled " + fileChooserParams.isCaptureEnabled());
-      Log.d("Image Chooser", "❤️❤️❤️=== getMode " + fileChooserParams.getMode());
-      Log.d("Image Chooser", "❤️❤️❤️❤=== getAcceptTypes " + fileChooserParams.getAcceptTypes()[0]);
       uploadMessageAboveL = filePathCallback;
-      if (fileChooserParams.isCaptureEnabled()) {
-        String[] acceptTypes = fileChooserParams.getAcceptTypes();
-        if (acceptTypes.length > 0) {
-          if (acceptTypes[0].startsWith("image/")) {
-            takePhoto();
-            return true;
-          }
-          if (acceptTypes[0].startsWith("video/")) {
-            recordVideo();
-            return true;
-          }
-        }
+      if (!fileChooserParams.isCaptureEnabled()) {
+        showImageChooser(fileChooserParams.getMode() == FileChooserParams.MODE_OPEN);
+        return true;
       }
-      openImageChooserActivity(fileChooserParams.getMode() == FileChooserParams.MODE_OPEN);
-      return true;
-    }
-
-    private void recordVideo() {
-      Intent recordVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
-      recordVideoIntent.putExtra("android.intent.extras.CAMERA_FACING", 0); // 调用后置摄像头
-      if (recordVideoIntent.resolveActivity(activity.getPackageManager()) != null) {
-        File photoFile = null;
-        try {
-          photoFile = createImageFile("MP4_", ".mp4");
-          recordVideoIntent.putExtra("PhotoPath", mCameraFilePath);
-        } catch (IOException ex) {
-          Log.e("TAG", "Unable to create Image File", ex);
+      String[] acceptTypes = fileChooserParams.getAcceptTypes();
+      if (acceptTypes.length > 0) {
+        if (acceptTypes[0].startsWith("image/")) {
+          takePhoto();
+          return true;
         }
-        // 适配7.0
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-          if (photoFile != null) {
-            Uri photoURI = FileProvider.getUriForFile(activity,
-                    "com.addcn.fileprovider", photoFile);
-            recordVideoIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            recordVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-          }
-        } else {
-          if (photoFile != null) {
-            mCameraFilePath = "file:" + photoFile.getAbsolutePath();
-            recordVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT,
-                    Uri.fromFile(photoFile));
-          } else {
-            recordVideoIntent = null;
-          }
+        if (acceptTypes[0].startsWith("video/")) {
+          recordVideo();
+          return true;
         }
-      }
-      activity.startActivityForResult(recordVideoIntent, CAPTURE_RESULT_CODE);
-    }
-
-    private void takePhoto() {
-      Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-      takePictureIntent.putExtra("android.intent.extras.CAMERA_FACING", 0); // 调用后置摄像头
-      if (takePictureIntent.resolveActivity(activity.getPackageManager()) != null) {
-        File photoFile = null;
-        try {
-          photoFile = createImageFile("JPEG", ".jpg");
-          takePictureIntent.putExtra("PhotoPath", mCameraFilePath);
-        } catch (IOException ex) {
-          Log.e("TAG", "Unable to create Image File", ex);
-        }
-        // 适配7.0
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-          if (photoFile != null) {
-            Uri photoURI = FileProvider.getUriForFile(activity,
-                    "com.addcn.fileprovider", photoFile);
-            takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-          }
-        } else {
-          if (photoFile != null) {
-            mCameraFilePath = "file:" + photoFile.getAbsolutePath();
-            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
-                    Uri.fromFile(photoFile));
-          } else {
-            takePictureIntent = null;
-          }
-        }
-      }
-      activity.startActivityForResult(takePictureIntent, CAPTURE_RESULT_CODE);
-    }
-
-    private File createImageFile(String prefix, String suffix) throws IOException {
-      String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.CHINA).format(new Date());
-      String imageFileName = prefix + timeStamp + "_";
-      File storageDir = activity.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-      File image = File.createTempFile(
-              imageFileName,  /* 前缀 */
-              suffix,         /* 后缀 */
-              storageDir      /* 文件夹 */
-      );
-      mCameraFilePath = image.getAbsolutePath();
-      return image;
-    }
-
-    private boolean deleteImageFile() {
-      if (mCameraFilePath != null) {
-        File emptyFile = new File(mCameraFilePath);
-        if (emptyFile.exists()) return emptyFile.delete();
       }
       return false;
     }
 
-    private void openImageChooserActivity(boolean allowMultiple) {
+    private void showImageChooser(boolean allowMultiple) {
       Log.d("Image Chooser", "openImageChooserActivity");
       Intent intent = new Intent(Intent.ACTION_PICK, null);
       intent.setDataAndType(
@@ -280,6 +194,63 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
       }
     }
 
+    private void recordVideo() {
+      startCapture(MediaStore.ACTION_VIDEO_CAPTURE, "MP4_", ".mp4");
+    }
+
+    private void takePhoto() {
+      startCapture(MediaStore.ACTION_IMAGE_CAPTURE, "JPEG", ".jpg");
+    }
+
+    private void startCapture(String action, String prefix, String suffix) {
+      Intent captureIntent = new Intent(action);
+      captureIntent.putExtra("android.intent.extras.CAMERA_FACING", 0); // 调用后置摄像头
+      if (captureIntent.resolveActivity(activity.getPackageManager()) == null) return;
+      File captureFile = null;
+      try {
+        captureFile = createCaptureFile(prefix, suffix);
+        captureIntent.putExtra("PhotoPath", captureFilePath);
+      } catch (IOException ex) {
+        Log.e("TAG", "Unable to create Image File", ex);
+      }
+      // 适配7.0
+      if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+        if (captureFile != null) {
+          Uri photoURI = FileProvider.getUriForFile(activity, FILE_PROVIDER, captureFile);
+          captureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+          captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+        }
+      } else {
+        if (captureFile != null) {
+          captureFilePath = "file:" + captureFile.getAbsolutePath();
+          captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(captureFile));
+        } else {
+          captureIntent = null;
+        }
+      }
+      activity.startActivityForResult(captureIntent, CAPTURE_RESULT_CODE);
+    }
+
+    private File createCaptureFile(String prefix, String suffix) throws IOException {
+      String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.CHINA).format(new Date());
+      String imageFileName = prefix + timeStamp + "_";
+      File storageDir = activity.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+      File image = File.createTempFile(
+              imageFileName,  /* 前缀 */
+              suffix,         /* 后缀 */
+              storageDir      /* 文件夹 */
+      );
+      captureFilePath = image.getAbsolutePath();
+      return image;
+    }
+
+    private void deleteCaptureFile() {
+      if (captureFilePath != null) {
+        File emptyFile = new File(captureFilePath);
+        if (emptyFile.exists()) emptyFile.deleteOnExit();
+      }
+    }
+
     public boolean onActivityResult(int requestCode, int resultCode, Intent data) {
       Log.d("Image Chooser", "onActivityResult requestCode " + requestCode + "resultCode " + resultCode);
       if (requestCode == CAPTURE_RESULT_CODE) {
@@ -287,13 +258,13 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
           if (null == uploadMessage && null == uploadMessageAboveL) {
             return true;
           }
-          File file = new File(mCameraFilePath);
+          File file = new File(captureFilePath);
           if (uploadMessageAboveL != null) {
             Uri[] results = new Uri[1];
             results[0] = Uri.fromFile(file);
             uploadMessageAboveL.onReceiveValue(results);
             uploadMessageAboveL = null;
-          } else {
+          } else if (uploadMessage != null) {
             Uri result = Uri.fromFile(file);
             uploadMessage.onReceiveValue(result);
             uploadMessage = null;
@@ -301,7 +272,7 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
           return false;
         } else if (resultCode == RESULT_CANCELED) {
           // 如果相机没有选择或者直接返回，需要给callback设置，否则onShowFileChoose方法不会被调用
-          deleteImageFile();
+          deleteCaptureFile();
           if (uploadMessageAboveL != null) {
             uploadMessageAboveL.onReceiveValue(null);
             uploadMessageAboveL = null;
