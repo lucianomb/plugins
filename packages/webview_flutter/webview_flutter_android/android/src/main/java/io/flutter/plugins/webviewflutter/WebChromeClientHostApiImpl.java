@@ -250,7 +250,7 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
       // 适配7.0
       if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
         if (captureFile != null) {
-          String authority = activity.getPackageName() + ".fileprovider";
+          String authority = activity.getPackageName() + ".webview.fileprovider";
           Uri photoURI = FileProvider.getUriForFile(activity, authority, captureFile);
           captureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
           captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);

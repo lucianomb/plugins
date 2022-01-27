@@ -4,7 +4,7 @@
     <application>
         <provider
             android:name=".WebViewFileProvider"
-            android:authorities="${applicationId}.fileprovider"
+            android:authorities="${applicationId}.webview.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
