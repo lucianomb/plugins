@@ -3,13 +3,13 @@
 
     <application>
         <provider
-            android:name="androidx.core.content.FileProvider"
+            android:name=".WebViewFileProvider"
             android:authorities="com.addcn.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/provider_paths" />
+                android:resource="@xml/provider_paths"/>
         </provider>
     </application>
 </manifest>
