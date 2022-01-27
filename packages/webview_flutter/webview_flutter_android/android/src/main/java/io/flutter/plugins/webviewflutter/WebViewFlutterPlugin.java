@@ -34,7 +34,7 @@ import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.WebViewHostApi;
  * <p>Call {@link #registerWith} to use the stable {@code io.flutter.plugin.common} package instead.
  */
 public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware,
-        PluginRegistry.ActivityResultListener {
+        PluginRegistry.ActivityResultListener, PluginRegistry.RequestPermissionsResultListener {
   private FlutterPluginBinding pluginBinding;
   private WebViewHostApiImpl webViewHostApi;
   private JavaScriptChannelHostApiImpl javaScriptChannelHostApi;
@@ -146,6 +146,7 @@ public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware,
   @Override
   public void onAttachedToActivity(@NonNull ActivityPluginBinding activityPluginBinding) {
     activityPluginBinding.addActivityResultListener(this);
+    activityPluginBinding.addRequestPermissionsResultListener(this);
     updateContext(activityPluginBinding.getActivity(),
             activityPluginBinding.getActivity());
   }
@@ -160,6 +161,7 @@ public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware,
   public void onReattachedToActivityForConfigChanges(
       @NonNull ActivityPluginBinding activityPluginBinding) {
     activityPluginBinding.addActivityResultListener(this);
+    activityPluginBinding.addRequestPermissionsResultListener(this);
     updateContext(activityPluginBinding.getActivity(),
             activityPluginBinding.getActivity());
   }
@@ -180,6 +182,15 @@ public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware,
     Log.e("webview_flutter", "onActivityResult webChromeClientHostApi ");
     if (webChromeClientHostApi != null) {
       return webChromeClientHostApi.onActivityResult(requestCode, resultCode, data);
+    }
+    return true;
+  }
+
+  @Override
+  public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    Log.e("webview_flutter", "onRequestPermissionsResult webChromeClientHostApi ");
+    if (webChromeClientHostApi != null) {
+      return webChromeClientHostApi.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
     return true;
   }

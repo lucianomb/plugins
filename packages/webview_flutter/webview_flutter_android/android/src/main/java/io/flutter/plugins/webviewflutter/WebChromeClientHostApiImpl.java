@@ -4,11 +4,13 @@
 
 package io.flutter.plugins.webviewflutter;
 
+import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -24,6 +26,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
 import java.io.File;
@@ -57,9 +61,10 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
     private ValueCallback<Uri> uploadMessage;
     private ValueCallback<Uri[]> uploadMessageAboveL;
     private String captureFilePath;
-    private final static String FILE_PROVIDER = "com.addcn.fileprovider";
     private final static int FILE_CHOOSER_RESULT_CODE = 10000;
     private final static int CAPTURE_RESULT_CODE = 10001;
+    private final static int REQUEST_CODE_CAMERA_VIDEO = 20000;
+    private final static int REQUEST_CODE_CAMERA_IMAGE = 20001;
     public static final int RESULT_OK = -1;
     public static final int RESULT_CANCELED = 0;
 
@@ -146,16 +151,26 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
 
     // For Android  >= 4.1
     public void openFileChooser(ValueCallback<Uri> valueCallback, String acceptType, String capture) {
-      Log.d("Image Chooser", "openFileChooser Android  >= 4.1");
+      Log.d("File Chooser", "openFileChooser Android  >= 4.1");
       uploadMessage = valueCallback;
-      showImageChooser(true);
+      if (!"camera".equals(capture) && !"*".equals(capture)) {
+        showImageChooser(true);
+        return;
+      }
+      if (acceptType.startsWith("image/")) {
+        takePhoto();
+        return;
+      }
+      if (acceptType.startsWith("video/")) {
+        recordVideo();
+      }
     }
 
     // For Android >= 5.0
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
-      Log.d("Image Chooser", "onShowFileChooser Android >= 5.0");
+      Log.d("File Chooser", "onShowFileChooser Android >= 5.0");
       uploadMessageAboveL = filePathCallback;
       if (!fileChooserParams.isCaptureEnabled()) {
         showImageChooser(fileChooserParams.getMode() == FileChooserParams.MODE_OPEN);
@@ -176,30 +191,49 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
     }
 
     private void showImageChooser(boolean allowMultiple) {
-      Log.d("Image Chooser", "openImageChooserActivity");
+      Log.d("File Chooser", "openImageChooserActivity");
       Intent intent = new Intent(Intent.ACTION_PICK, null);
       intent.setDataAndType(
               MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*");
       if (allowMultiple && Build.VERSION.SDK_INT >= 21) {
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
       }
-      Intent chooser = new Intent(Intent.ACTION_CHOOSER);
-      chooser.putExtra(Intent.EXTRA_TITLE, "选择图片");
-      chooser.putExtra(Intent.EXTRA_INTENT, intent);
-
+      Intent chooser = Intent.createChooser(intent, "File Chooser");
       if (activity != null) {
         activity.startActivityForResult(chooser, FILE_CHOOSER_RESULT_CODE);
       } else {
-        Log.d("Image Chooser", "activity is null");
+        Log.d("File Chooser", "activity is null");
       }
     }
 
     private void recordVideo() {
-      startCapture(MediaStore.ACTION_VIDEO_CAPTURE, "MP4_", ".mp4");
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        boolean granted = ContextCompat.checkSelfPermission(activity.getBaseContext(),
+                Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+        if (granted) {
+          startCapture(MediaStore.ACTION_VIDEO_CAPTURE, "MP4_", ".mp4");
+        } else {
+          String[] permissions = new String[]{Manifest.permission.CAMERA};
+          ActivityCompat.requestPermissions(activity, permissions, REQUEST_CODE_CAMERA_VIDEO);
+        }
+      } else {
+        startCapture(MediaStore.ACTION_VIDEO_CAPTURE, "MP4_", ".mp4");
+      }
     }
 
     private void takePhoto() {
-      startCapture(MediaStore.ACTION_IMAGE_CAPTURE, "JPEG", ".jpg");
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        boolean granted = ContextCompat.checkSelfPermission(activity.getBaseContext(),
+                Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+        if (granted) {
+          startCapture(MediaStore.ACTION_IMAGE_CAPTURE, "JPEG", ".jpg");
+        } else {
+          String[] permissions = new String[]{Manifest.permission.CAMERA};
+          ActivityCompat.requestPermissions(activity, permissions, REQUEST_CODE_CAMERA_IMAGE);
+        }
+      } else {
+        startCapture(MediaStore.ACTION_IMAGE_CAPTURE, "JPEG", ".jpg");
+      }
     }
 
     private void startCapture(String action, String prefix, String suffix) {
@@ -216,7 +250,8 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
       // 适配7.0
       if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
         if (captureFile != null) {
-          Uri photoURI = FileProvider.getUriForFile(activity, FILE_PROVIDER, captureFile);
+          String authority = activity.getPackageName() + ".fileprovider";
+          Uri photoURI = FileProvider.getUriForFile(activity, authority, captureFile);
           captureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
           captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
         }
@@ -252,7 +287,7 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
     }
 
     public boolean onActivityResult(int requestCode, int resultCode, Intent data) {
-      Log.d("Image Chooser", "onActivityResult requestCode " + requestCode + "resultCode " + resultCode);
+      Log.d("File Chooser", "onActivityResult requestCode " + requestCode + "resultCode " + resultCode);
       if (requestCode == CAPTURE_RESULT_CODE) {
         if (resultCode == RESULT_OK) {
           if (null == uploadMessage && null == uploadMessageAboveL) {
@@ -323,6 +358,18 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
       }
       uploadMessageAboveL.onReceiveValue(results);
       uploadMessageAboveL = null;
+    }
+
+    public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+      Log.e("webview_flutter", "onRequestPermissionsResult ");
+      if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        if (requestCode == REQUEST_CODE_CAMERA_IMAGE) {
+          startCapture(MediaStore.ACTION_IMAGE_CAPTURE, "JPEG", ".jpg");
+        } else if (requestCode == REQUEST_CODE_CAMERA_VIDEO) {
+          startCapture(MediaStore.ACTION_VIDEO_CAPTURE, "MP4_", ".mp4");
+        }
+      }
+      return true;
     }
 
     /**
@@ -398,6 +445,14 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
     Log.e("webview_flutter", "onActivityResult webChromeClient ");
     if (webChromeClient != null) {
       return webChromeClient.onActivityResult(requestCode, resultCode, data);
+    }
+    return true;
+  }
+
+  public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    Log.e("webview_flutter", "onRequestPermissionsResult webChromeClient ");
+    if (webChromeClient != null) {
+      return webChromeClient.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
     return true;
   }
