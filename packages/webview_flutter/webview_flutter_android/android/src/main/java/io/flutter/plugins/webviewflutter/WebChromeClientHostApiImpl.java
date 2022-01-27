@@ -154,7 +154,7 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
       Log.d("File Chooser", "openFileChooser Android  >= 4.1");
       uploadMessage = valueCallback;
       if (!"camera".equals(capture) && !"*".equals(capture)) {
-        showImageChooser(true);
+        showChooser(false, acceptType);
         return;
       }
       if (acceptType.startsWith("image/")) {
@@ -173,7 +173,11 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
       Log.d("File Chooser", "onShowFileChooser Android >= 5.0");
       uploadMessageAboveL = filePathCallback;
       if (!fileChooserParams.isCaptureEnabled()) {
-        showImageChooser(fileChooserParams.getMode() == FileChooserParams.MODE_OPEN);
+        String[] acceptTypes = fileChooserParams.getAcceptTypes();
+        String acceptType = "*/*";
+        if (acceptTypes.length > 0) acceptType = acceptTypes[0];
+        boolean allowMultiple = fileChooserParams.getMode() == FileChooserParams.MODE_OPEN;
+        showChooser(allowMultiple, acceptType);
         return true;
       }
       String[] acceptTypes = fileChooserParams.getAcceptTypes();
@@ -190,14 +194,29 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
       return false;
     }
 
-    private void showImageChooser(boolean allowMultiple) {
-      Log.d("File Chooser", "openImageChooserActivity");
-      Intent intent = new Intent(Intent.ACTION_PICK, null);
-      intent.setDataAndType(
-              MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*");
-      if (allowMultiple && Build.VERSION.SDK_INT >= 21) {
-        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+    private void showChooser(boolean allowMultiple, String acceptType) {
+      Log.d("File Chooser", "showChooser");
+      if ("image/*".equals(acceptType) || "video/*".equals(acceptType)) {
+        showMediaChooser(allowMultiple, acceptType);
+      } else {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, allowMultiple);
+        intent.setType(acceptType);
+        Intent chooser = Intent.createChooser(intent, "File Chooser");
+        if (activity != null) {
+          activity.startActivityForResult(chooser, FILE_CHOOSER_RESULT_CODE);
+        } else {
+          Log.d("File Chooser", "activity is null");
+        }
       }
+    }
+
+    private void showMediaChooser(boolean allowMultiple, String acceptType) {
+      Log.d("File Chooser", "showMediaChooser");
+      Intent intent = new Intent(Intent.ACTION_PICK, null);
+      intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, acceptType);
+      intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, allowMultiple);
       Intent chooser = Intent.createChooser(intent, "File Chooser");
       if (activity != null) {
         activity.startActivityForResult(chooser, FILE_CHOOSER_RESULT_CODE);
