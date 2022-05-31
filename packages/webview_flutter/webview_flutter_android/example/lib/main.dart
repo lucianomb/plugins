@@ -115,7 +115,8 @@ class _WebViewExampleState extends State<_WebViewExample> {
       body: Builder(builder: (BuildContext context) {
         return WebView(
           // initialUrl: 'https://flutter.dev',
-          initialUrl: 'https://m.debug.8591.com.hk/customIM',
+          // initialUrl: 'https://m.debug.8591.com.hk/customIM',
+          initialUrl: "http://line.me/ti/p/Ocyo72G2il",
           onWebViewCreated: (WebViewController controller) {
             _controller.complete(controller);
           },

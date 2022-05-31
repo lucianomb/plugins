@@ -5,7 +5,9 @@
 package io.flutter.plugins.webviewflutter;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.os.Build;
+import android.util.Log;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
@@ -22,6 +24,16 @@ import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.WebViewClientFl
  */
 public class WebViewClientFlutterApiImpl extends WebViewClientFlutterApi {
   private final InstanceManager instanceManager;
+  private Activity activity;
+
+  /**
+   * Sets the activity to construct
+   *
+   * @param activity the new activity.
+   */
+  public void setActivity(Activity activity) {
+    this.activity = activity;
+  }
 
   @RequiresApi(api = Build.VERSION_CODES.M)
   static GeneratedAndroidWebView.WebResourceErrorData createWebResourceErrorData(
@@ -186,6 +198,7 @@ public class WebViewClientFlutterApiImpl extends WebViewClientFlutterApi {
    */
   public void onURLChange(
           WebViewClient webViewClient, WebView webView, String urlArg, Reply<Void> callback) {
+    if (WebViewUrlInterceptor.urlLoading(activity, urlArg)) return;
     onURLChange(
             instanceManager.getInstanceId(webViewClient),
             instanceManager.getInstanceId(webView),
