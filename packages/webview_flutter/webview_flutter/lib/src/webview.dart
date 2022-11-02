@@ -75,6 +75,9 @@ typedef PageTitleChangeCallback = void Function(String title);
 /// Signature for when a [WebView] has changed it's url.
 typedef PageURLChangeCallback = void Function(String url);
 
+/// Signature for when a [WebView] has changed it's canGoBack.
+typedef PageCanGoBackChangeCallback = void Function(bool canGoback);
+
 /// A web view widget for showing html content.
 ///
 /// There is a known issue that on iOS 13.4 and 13.5, other flutter widgets covering
@@ -102,6 +105,7 @@ class WebView extends StatefulWidget {
     this.onWebResourceError,
     this.onDidScrollCallback,
     this.onTitleChangeCallback,
+    this.onCanGoBackCallback,
     this.onUrlChangeCallback,
     this.debuggingEnabled = false,
     this.gestureNavigationEnabled = false,
@@ -264,13 +268,16 @@ class WebView extends StatefulWidget {
   /// Invoked when web navigate to new page
   final PageURLChangeCallback? onUrlChangeCallback;
 
+  /// Invoked when web navigate to new page
+  final PageCanGoBackChangeCallback? onCanGoBackCallback;
+
   /// Controls whether WebView debugging is enabled.
   ///
   /// Setting this to true enables [WebView debugging on Android](https://developers.google.com/web/tools/chrome-devtools/remote-debugging/).
   ///
   /// WebView debugging is enabled by default in dev builds on iOS.
   ///
-  /// To debug WebViews on iOS:
+  /// To debug WebViews on iOS:x
   /// - Enable developer options (Open Safari, go to Preferences -> Advanced and make sure "Show Develop Menu in Menubar" is on.)
   /// - From the Menu-bar (of Safari) select Develop -> iPhone Simulator -> <your webview page>
   ///
@@ -533,6 +540,12 @@ class _PlatformCallbacksHandler implements WebViewPlatformCallbacksHandler {
     }
   }
 
+  @override
+  void onPageCanGoBackChange(bool canGoBack) {
+    if(_widget.onCanGoBackCallback != null){
+      _widget.onCanGoBackCallback!(canGoBack);
+    }
+  }
 }
 
 /// Controls a [WebView].

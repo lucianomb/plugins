@@ -86,6 +86,9 @@ class MethodChannelWebViewPlatform implements WebViewPlatformController {
         _platformCallbacksHandler
             .onPageURLChange(call.arguments['url']! as String);
         return null;
+      case 'onCanGoBackChange':
+        _platformCallbacksHandler.onPageCanGoBackChange(call.arguments['canGoBack']! as bool);
+        return null;
     }
 
     throw MissingPluginException(

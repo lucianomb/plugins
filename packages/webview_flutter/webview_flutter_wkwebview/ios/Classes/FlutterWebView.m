@@ -123,6 +123,7 @@
     _webView.scrollView.delegate = _navigationDelegate;
     [_webView addObserver:self forKeyPath:@"title" options:NSKeyValueObservingOptionNew context:nil];
     [_webView addObserver:self forKeyPath:@"URL" options:NSKeyValueObservingOptionNew context:nil];
+    [_webView addObserver:self forKeyPath:@"canGoBack" options:NSKeyValueObservingOptionNew context:nil];
 
     __weak __typeof__(self) weakSelf = self;
     [_channel setMethodCallHandler:^(FlutterMethodCall* call, FlutterResult result) {
@@ -158,6 +159,7 @@
   }
   [_webView removeObserver:self forKeyPath:@"title" context:nil];
   [_webView removeObserver:self forKeyPath:@"URL" context:nil];
+    [_webView removeObserver:self forKeyPath:@"canGoBack" context:nil];
 }
 
 - (UIView*)view {
@@ -715,6 +717,8 @@
             url = @"";
         }
         [_channel invokeMethod:@"onURLChange" arguments: @{@"url": url}];
+    } else if([@"canGoBack" isEqualToString:keyPath]){
+        [_channel invokeMethod:@"onCanGoBackChange" arguments: @{@"canGoBack": [NSNumber numberWithBool:_webView.canGoBack]}];
     }
 }
 
