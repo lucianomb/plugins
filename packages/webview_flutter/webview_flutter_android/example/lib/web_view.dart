@@ -368,6 +368,11 @@ class _PlatformCallbacksHandler implements WebViewPlatformCallbacksHandler {
   void onPageURLChange(String url) {
     // TODO: implement onPageURLChange
   }
+
+  @override
+  void onPageCanGoBackChange(bool canGoBack) {
+    // TODO: implement onPageCanGoBackChange
+  }
 }
 
 /// Controls a [WebView].

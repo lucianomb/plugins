@@ -38,4 +38,7 @@ abstract class WebViewPlatformCallbacksHandler {
 
   /// Invoked by [WebViewPlatformController] when navigate to new page.
   void onPageURLChange(String url);
+
+  /// Invoked by [WebViewPlatformController] when navigate to new page.
+  void onPageCanGoBackChange(bool canGoBack);
 }

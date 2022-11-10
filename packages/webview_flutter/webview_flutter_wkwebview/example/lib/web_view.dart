@@ -687,6 +687,11 @@ class _PlatformCallbacksHandler implements WebViewPlatformCallbacksHandler {
   void onPageURLChange(String url) {
     // TODO: implement onPageURLChange
   }
+
+  @override
+  void onPageCanGoBackChange(bool canGoBack) {
+    // TODO: implement onPageCanGoBackChange
+  }
 }
 
 /// App-facing cookie manager that exposes the correct platform implementation.
